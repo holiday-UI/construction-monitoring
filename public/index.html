@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Real-Time Monitoring System for Construction Projects</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <!-- ===================== LOGIN ===================== -->
+  <div id="login-view" class="login-wrap">
+    <div class="login-card">
+      <div class="brand">
+        <!-- official ministry-building seal -->
+        <svg class="seal lg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="32" cy="32" r="30" fill="#0a2647" stroke="#c9a227" stroke-width="2"/>
+          <circle cx="32" cy="32" r="25" fill="none" stroke="#c9a227" stroke-width="1" opacity="0.5"/>
+          <polygon points="32,13 51,25 13,25" fill="#c9a227"/>
+          <rect x="13" y="25" width="38" height="3" fill="#c9a227"/>
+          <rect x="17" y="30" width="4" height="15" fill="#c9a227"/>
+          <rect x="25" y="30" width="4" height="15" fill="#c9a227"/>
+          <rect x="35" y="30" width="4" height="15" fill="#c9a227"/>
+          <rect x="43" y="30" width="4" height="15" fill="#c9a227"/>
+          <rect x="13" y="47" width="38" height="4" fill="#c9a227"/>
+        </svg>
+        <div class="eyebrow">Government of the Republic</div>
+        <h1>Real-Time Monitoring System<br>for Construction Projects</h1>
+        <p class="subtitle">Official portal for ministerial project oversight</p>
+      </div>
+      <div class="rule"></div>
+      <form id="login-form">
+        <label>Official email</label>
+        <input type="email" id="email" placeholder="you@cms.gov" required autocomplete="username" />
+        <label>Password</label>
+        <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password" />
+        <button type="submit" class="btn primary full">Sign in securely</button>
+        <p id="login-error" class="error"></p>
+      </form>
+      <details class="demo-accounts">
+        <summary>Demo accounts</summary>
+        <ul>
+          <li><b>Admin</b> — admin@cms.gov / admin123</li>
+          <li><b>Minister of Health</b> — minister.health@cms.gov / minister123</li>
+          <li><b>Minister of Education</b> — minister.edu@cms.gov / minister123</li>
+          <li><b>Constructor</b> — constructor@buildco.com / build123</li>
+          <li><b>Project Manager</b> — pm.john@buildco.com / pm123</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+
+  <!-- ===================== APP SHELL ===================== -->
+  <div id="app-view" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="side-brand">
+        <svg class="seal sm" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="32" cy="32" r="30" fill="#0a2647" stroke="#c9a227" stroke-width="2"/>
+          <polygon points="32,13 51,25 13,25" fill="#c9a227"/>
+          <rect x="13" y="25" width="38" height="3" fill="#c9a227"/>
+          <rect x="17" y="30" width="4" height="15" fill="#c9a227"/>
+          <rect x="25" y="30" width="4" height="15" fill="#c9a227"/>
+          <rect x="35" y="30" width="4" height="15" fill="#c9a227"/>
+          <rect x="43" y="30" width="4" height="15" fill="#c9a227"/>
+          <rect x="13" y="47" width="38" height="4" fill="#c9a227"/>
+        </svg>
+        <div>
+          <div class="t1">Construction<br>Monitoring</div>
+          <div class="t2">Ministerial Portal</div>
+        </div>
+      </div>
+      <nav class="side-nav" id="side-nav"></nav>
+      <div class="side-foot">Secure government system<br>&copy; 2026</div>
+    </aside>
+
+    <div class="app-main">
+      <header class="topbar">
+        <div class="page-title" id="page-title">Dashboard</div>
+        <div class="tb-right">
+          <div class="live"><span class="live-dot" id="live-dot"></span><span id="live-text">connecting…</span></div>
+          <div class="who">
+            <div class="avatar" id="avatar">?</div>
+            <div>
+              <div class="meta-name" id="who-name"></div>
+              <div class="meta-role" id="who-role"></div>
+            </div>
+          </div>
+          <button id="logout" class="btn ghost sm">Sign out</button>
+        </div>
+      </header>
+      <main id="content" class="content"></main>
+    </div>
+  </div>
+
+  <div id="modal-root"></div>
+  <script src="/js/app.js"></script>
+</body>
+</html>
