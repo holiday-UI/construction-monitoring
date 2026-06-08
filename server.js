@@ -400,6 +400,99 @@ app.post('/api/participants/simulate', auth, requireRole('admin', 'constructor')
   res.status(201).json(decorateParticipant(created));
 });
 
+// CORS for the public external endpoints (the WorkerConnect app may run on a
+// different origin, e.g. Flutter web or a mobile webview).
+app.use('/api/external', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
+// ---------- external sign-up (WorkerConnect mobile app) ----------
+// PUBLIC, no auth: laborers & suppliers register themselves from the mobile app.
+// They land in the shared "pending" pool that constructors verify, approve and
+// assign to a project. Self-registrations start as "unverified".
+app.post('/api/external/register', (req, res) => {
+  const b = req.body || {};
+  const kind = b.kind === 'supplier' ? 'supplier' : (b.kind === 'laborer' ? 'laborer' : null);
+  const name = String(b.name || '').trim();
+  const specialty = String(b.specialty || '').trim();
+  const idNumber = String(b.idNumber || '').trim();
+  const contact = String(b.contact || '').trim();
+
+  if (!kind) return res.status(400).json({ error: 'kind must be "laborer" or "supplier"' });
+  if (!name) return res.status(400).json({ error: 'Full name / company name is required' });
+  if (!contact) return res.status(400).json({ error: 'A phone contact is required' });
+  if (!specialty) return res.status(400).json({ error: kind === 'supplier' ? 'What you supply is required' : 'Your trade / specialty is required' });
+
+  // Avoid obvious duplicate sign-ups from the same phone while still pending.
+  const dup = store.findOne('participants', (p) => p.contact === contact && p.status === 'pending');
+  if (dup) {
+    return res.status(409).json({
+      error: 'An application from this phone number is already pending review.',
+      trackingId: dup.externalId,
+    });
+  }
+
+  const seq = 1000 + store.all('participants').length + 1;
+  const externalId = (kind === 'laborer' ? 'WC-1' : 'WC-2') + seq;
+  const created = store.insert('participants', {
+    kind, name, specialty,
+    idNumber: idNumber || null,
+    contact,
+    source: 'WorkerConnect App',
+    externalId,
+    verification: 'unverified',
+    status: 'pending',
+    assignedProjectId: null, reviewNote: '', reviewedById: null, reviewedByName: null, reviewedAt: null,
+    createdAt: now(),
+  });
+  logActivity('participant_incoming', `New ${kind} sign-up received from WorkerConnect: ${name} (${specialty}).`);
+  broadcast({ event: 'participant', data: decorateParticipant(created) });
+  // Return only what the applicant should see (no internal review fields).
+  res.status(201).json({
+    trackingId: created.externalId,
+    kind: created.kind,
+    name: created.name,
+    specialty: created.specialty,
+    status: created.status,
+    verification: created.verification,
+    createdAt: created.createdAt,
+  });
+});
+
+// PUBLIC, no auth: an applicant checks the status of their application by
+// tracking id (externalId) or phone contact.
+app.get('/api/external/status', (req, res) => {
+  const trackingId = String(req.query.trackingId || '').trim();
+  const contact = String(req.query.contact || '').trim();
+  if (!trackingId && !contact) return res.status(400).json({ error: 'Provide a tracking id or phone contact' });
+
+  const p = store.findOne('participants', (x) =>
+    (trackingId && x.externalId && x.externalId.toLowerCase() === trackingId.toLowerCase()) ||
+    (contact && x.contact === contact));
+  if (!p) return res.status(404).json({ error: 'No application found for those details' });
+
+  const proj = p.assignedProjectId ? store.findOne('projects', (x) => x.id === p.assignedProjectId) : null;
+  res.json({
+    trackingId: p.externalId,
+    kind: p.kind,
+    name: p.name,
+    specialty: p.specialty,
+    contact: p.contact,
+    status: p.status,                 // pending | approved | rejected
+    verification: p.verification,     // unverified | verified | flagged
+    assignedProjectName: proj ? proj.name : null,
+    assignedProjectLocation: proj ? (proj.location || null) : null,
+    reviewNote: p.reviewNote || '',
+    reviewedByName: p.reviewedByName || null,
+    reviewedAt: p.reviewedAt || null,
+    createdAt: p.createdAt,
+  });
+});
+
 // ---------- conversations (per project, two channels) ----------
 // channel 'minister' : minister  <-> constructor  (feedback / oversight)
 // channel 'pm'       : constructor <-> project manager (discussing uploaded photos)
