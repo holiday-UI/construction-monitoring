@@ -402,38 +402,6 @@ app.post('/api/participants/:id/review', auth, requireRole('admin', 'constructor
   res.json(decorateParticipant(updated));
 });
 
-// Simulate an incoming sign-up from the external app (stand-in until it is linked).
-app.post('/api/participants/simulate', auth, requireRole('admin', 'constructor'), (req, res) => {
-  const laborers = [
-    ['Peter Kamau', 'Mason'], ['Alice Wanjiku', 'Electrician'], ['Joseph Otieno', 'Plumber'],
-    ['Mary Chebet', 'Steel fixer'], ['Samuel Mwangi', 'Carpenter'], ['Grace Akinyi', 'Painter'],
-    ['Daniel Kiprono', 'Welder'], ['Esther Njeri', 'Tiler'],
-  ];
-  const suppliers = [
-    ['Bamburi Cement Ltd', 'Cement & aggregates'], ['Devki Steel Mills', 'Steel & reinforcement'],
-    ['Crown Paints Ltd', 'Paints & finishes'], ['Mabati Rolling Mills', 'Roofing sheets'],
-    ['Savannah Sand Suppliers', 'Sand & ballast'],
-  ];
-  const kind = Math.random() < 0.6 ? 'laborer' : 'supplier';
-  const pick = (a) => a[Math.floor(Math.random() * a.length)];
-  const [name, specialty] = kind === 'laborer' ? pick(laborers) : pick(suppliers);
-  const verifications = ['verified', 'verified', 'verified', 'unverified', 'flagged'];
-  const verification = verifications[Math.floor(Math.random() * verifications.length)];
-  const created = store.insert('participants', {
-    kind, name, specialty,
-    idNumber: kind === 'laborer' ? String(10000000 + Math.floor(Math.random() * 89999999))
-                                 : 'BRS-' + (100000 + Math.floor(Math.random() * 899999)),
-    contact: '07' + (10000000 + Math.floor(Math.random() * 89999999)),
-    source: 'WorkerConnect App', externalId: 'WC-' + (1000 + Math.floor(Math.random() * 9000)),
-    verification, status: 'pending',
-    assignedProjectId: null, reviewNote: '', reviewedById: null, reviewedByName: null, reviewedAt: null,
-    createdAt: now(),
-  });
-  logActivity('participant_incoming', `New ${kind} sign-up received from external app: ${name} (${specialty}).`);
-  broadcast({ event: 'participant', data: decorateParticipant(created) });
-  res.status(201).json(decorateParticipant(created));
-});
-
 // CORS for the public external endpoints (the WorkerConnect app may run on a
 // different origin, e.g. Flutter web or a mobile webview).
 app.use('/api/external', (req, res, next) => {

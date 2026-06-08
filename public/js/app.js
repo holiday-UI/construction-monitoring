@@ -531,16 +531,11 @@ async function renderApprovals(body) {
     <div class="section-title">
       <div style="display:flex;gap:8px;flex-wrap:wrap">${filters.map(([k, lbl]) =>
         `<button class="btn sm ${approvalsFilter === k ? 'primary' : 'ghost'}" data-filter="${k}">${lbl}</button>`).join('')}</div>
-      <button class="btn gold sm" id="simulate">⟳ Simulate incoming sign-up</button>
     </div>
     ${list.length ? `<div class="grid">${list.map((p) => participantCard(p, projects)).join('')}</div>`
                   : '<div class="empty">No applicants in this view.</div>'}`;
 
   body.querySelectorAll('[data-filter]').forEach((b) => b.addEventListener('click', () => { approvalsFilter = b.dataset.filter; render(); }));
-  $('#simulate').addEventListener('click', async () => {
-    try { await api('/participants/simulate', { method: 'POST' }); toast('New applicant received from external app'); render(); }
-    catch (e) { toast(e.message); }
-  });
   body.querySelectorAll('[data-approve]').forEach((b) => b.addEventListener('click', () => {
     const sel = body.querySelector(`#proj-${b.dataset.approve}`);
     reviewParticipant(Number(b.dataset.approve), 'approve', sel ? sel.value : '');

@@ -23,17 +23,10 @@ const projects = [
   { id: 4, name: 'Westlands Primary School Block',       type: 'School',   ministry: 'Education', location: 'Nairobi',  contractorId: 4, projectManagerId: 6, status: 'In Progress', progress: 50, budget: 90000000,  startDate: '2025-10-05', expectedEnd: '2026-09-01', description: '12-classroom block (shown to demonstrate ministry filtering).', createdAt: now() },
 ];
 
-// Incoming laborers & suppliers from the external sign-up app, awaiting the
-// constructor's verification, approval and assignment to a project.
-const participants = [
-  { id: 1, kind: 'laborer',  name: 'Peter Kamau',          specialty: 'Mason',                  idNumber: '23456789', contact: '0712345678', source: 'WorkerConnect App', externalId: 'WC-1001', verification: 'verified',   status: 'pending', assignedProjectId: null, reviewNote: '', reviewedById: null, reviewedByName: null, reviewedAt: null, createdAt: now() },
-  { id: 2, kind: 'laborer',  name: 'Alice Wanjiku',        specialty: 'Electrician',            idNumber: '31245678', contact: '0722333444', source: 'WorkerConnect App', externalId: 'WC-1002', verification: 'verified',   status: 'pending', assignedProjectId: null, reviewNote: '', reviewedById: null, reviewedByName: null, reviewedAt: null, createdAt: now() },
-  { id: 3, kind: 'laborer',  name: 'Joseph Otieno',        specialty: 'Plumber',                idNumber: '40567812', contact: '0733555666', source: 'WorkerConnect App', externalId: 'WC-1003', verification: 'unverified', status: 'pending', assignedProjectId: null, reviewNote: '', reviewedById: null, reviewedByName: null, reviewedAt: null, createdAt: now() },
-  { id: 4, kind: 'laborer',  name: 'Mary Chebet',          specialty: 'Steel fixer',            idNumber: '29876543', contact: '0744777888', source: 'WorkerConnect App', externalId: 'WC-1004', verification: 'flagged',    status: 'pending', assignedProjectId: null, reviewNote: '', reviewedById: null, reviewedByName: null, reviewedAt: null, createdAt: now() },
-  { id: 5, kind: 'supplier', name: 'Bamburi Cement Ltd',   specialty: 'Cement & aggregates',    idNumber: 'BRS-204517', contact: '0709123456', source: 'WorkerConnect App', externalId: 'WC-2001', verification: 'verified',   status: 'pending', assignedProjectId: null, reviewNote: '', reviewedById: null, reviewedByName: null, reviewedAt: null, createdAt: now() },
-  { id: 6, kind: 'supplier', name: 'Devki Steel Mills',    specialty: 'Steel & reinforcement',  idNumber: 'BRS-118903', contact: '0709987654', source: 'WorkerConnect App', externalId: 'WC-2002', verification: 'verified',   status: 'pending', assignedProjectId: null, reviewNote: '', reviewedById: null, reviewedByName: null, reviewedAt: null, createdAt: now() },
-  { id: 7, kind: 'supplier', name: 'Coast Hardware Co.',   specialty: 'General hardware',       idNumber: 'BRS-330221', contact: '0701112223', source: 'WorkerConnect App', externalId: 'WC-2003', verification: 'unverified', status: 'pending', assignedProjectId: null, reviewNote: '', reviewedById: null, reviewedByName: null, reviewedAt: null, createdAt: now() },
-];
+// Laborers & suppliers are NOT seeded. They register themselves through the
+// external sign-up app (POST /api/external/register) and then appear here for
+// the constructor to verify, approve and assign to a project.
+const participants = [];
 
 // Sample conversations. channel 'minister' = minister<->constructor;
 // channel 'pm' = constructor<->project manager (discussing uploaded photos).
