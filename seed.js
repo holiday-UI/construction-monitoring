@@ -1,10 +1,8 @@
 // Seeds demo users and projects. Run with: npm run seed
-const fs = require('fs');
-const path = require('path');
+// Writes to whichever backend the store uses (Postgres if DATABASE_URL is set,
+// otherwise the local data/db.json file).
 const bcrypt = require('bcryptjs');
-
-const DB_FILE = path.join(__dirname, 'data', 'db.json');
-fs.mkdirSync(path.dirname(DB_FILE), { recursive: true });
+const store = require('./store');
 
 const hash = (p) => bcrypt.hashSync(p, 10);
 const now = () => new Date().toISOString();
@@ -50,12 +48,19 @@ const db = { users, projects, pictures: [], participants, messages, activity: [
   { id: 1, type: 'project_created', projectId: 1, message: 'Project "Nairobi General Hospital - New Wing" registered.', at: now() },
 ] };
 
-fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
-console.log('Seeded', users.length, 'users,', projects.length, 'projects and', participants.length, 'pending applicants -> data/db.json');
-console.log('\nLogin accounts (email / password):');
-console.log('  Admin .............. admin@cms.gov / admin123');
-console.log('  Minister of Health . minister.health@cms.gov / minister123');
-console.log('  Minister of Educ. .. minister.edu@cms.gov / minister123');
-console.log('  Constructor ........ constructor@buildco.com / build123');
-console.log('  Project Manager .... pm.john@buildco.com / pm123');
-console.log('  Project Manager .... pm.grace@buildco.com / pm123');
+(async () => {
+  await store.init();
+  await store.reset(db);
+  console.log('Seeded', users.length, 'users,', projects.length, 'projects and', participants.length, 'pending applicants.');
+  console.log('\nLogin accounts (email / password):');
+  console.log('  Admin .............. admin@cms.gov / admin123');
+  console.log('  Minister of Health . minister.health@cms.gov / minister123');
+  console.log('  Minister of Educ. .. minister.edu@cms.gov / minister123');
+  console.log('  Constructor ........ constructor@buildco.com / build123');
+  console.log('  Project Manager .... pm.john@buildco.com / pm123');
+  console.log('  Project Manager .... pm.grace@buildco.com / pm123');
+  process.exit(0);
+})().catch((e) => {
+  console.error('Seed failed:', e.message);
+  process.exit(1);
+});

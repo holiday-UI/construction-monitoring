@@ -17,18 +17,44 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ---------- file uploads (pictures) ----------
+// Photos go to Cloudinary when CLOUDINARY_URL is configured (persistent, needed
+// in the cloud where local disk is wiped on redeploy); otherwise they are saved
+// to local disk for zero-setup development.
+const USE_CLOUDINARY = !!process.env.CLOUDINARY_URL;
+let cloudinary = null;
+if (USE_CLOUDINARY) {
+  cloudinary = require('cloudinary').v2;
+  cloudinary.config({ secure: true }); // reads CLOUDINARY_URL from the environment
+}
+
 const UPLOAD_DIR = path.join(__dirname, 'uploads');
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-    filename: (req, file, cb) => {
-      const safe = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-      cb(null, Date.now() + '-' + Math.round(Math.random() * 1e6) + '-' + safe);
-    },
-  }),
+  storage: USE_CLOUDINARY
+    ? multer.memoryStorage()
+    : multer.diskStorage({
+        destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+        filename: (req, file, cb) => {
+          const safe = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+          cb(null, Date.now() + '-' + Math.round(Math.random() * 1e6) + '-' + safe);
+        },
+      }),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
 });
+
+// Returns a public URL for an uploaded file, storing it in the chosen backend.
+function storeUploadedFile(f) {
+  if (USE_CLOUDINARY) {
+    return new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: 'construction-monitoring' },
+        (err, result) => (err ? reject(err) : resolve(result.secure_url))
+      );
+      stream.end(f.buffer);
+    });
+  }
+  return Promise.resolve('/uploads/' + f.filename);
+}
 
 // ---------- helpers ----------
 const now = () => new Date().toISOString();
@@ -210,7 +236,7 @@ app.post('/api/projects/:id/progress', auth, requireRole('project_manager', 'adm
 
 // ---------- pictures (the core workflow) ----------
 // PM uploads -> pending_constructor
-app.post('/api/projects/:id/pictures', auth, requireRole('project_manager', 'admin'), upload.array('photos', 8), (req, res) => {
+app.post('/api/projects/:id/pictures', auth, requireRole('project_manager', 'admin'), upload.array('photos', 8), async (req, res) => {
   const project = store.findOne('projects', (p) => p.id === Number(req.params.id));
   if (!project) return res.status(404).json({ error: 'Project not found' });
   if (!canSeeProject(req.user, project)) return res.status(403).json({ error: 'Not your project' });
@@ -221,9 +247,17 @@ app.post('/api/projects/:id/pictures', auth, requireRole('project_manager', 'adm
   const lat = num(req.body.lat), lng = num(req.body.lng), accuracy = num(req.body.accuracy);
   const capturedAt = req.body.capturedAt || null;
 
-  const created = req.files.map((f) => store.insert('pictures', {
+  let urls;
+  try {
+    urls = await Promise.all(req.files.map(storeUploadedFile));
+  } catch (e) {
+    console.error('Photo upload failed:', e.message);
+    return res.status(502).json({ error: 'Photo upload failed, please try again' });
+  }
+
+  const created = req.files.map((f, i) => store.insert('pictures', {
     projectId: project.id,
-    url: '/uploads/' + f.filename,
+    url: urls[i],
     caption: req.body.caption || '',
     lat, lng, accuracy, capturedAt,
     takenById: req.user.id,
@@ -610,8 +644,15 @@ function broadcast(payload) {
 }
 wss.on('connection', (ws) => ws.send(JSON.stringify({ event: 'hello', data: { ts: now() } })));
 
-server.listen(PORT, () => {
-  console.log(`\nReal-Time Construction Monitoring System running:`);
-  console.log(`   http://localhost:${PORT}\n`);
-  if (!store.all('users').length) console.log('No users found — run "npm run seed" first.\n');
-});
+store.init()
+  .then(() => {
+    server.listen(PORT, () => {
+      console.log(`\nReal-Time Construction Monitoring System running:`);
+      console.log(`   http://localhost:${PORT}\n`);
+      if (!store.all('users').length) console.log('No users found — run "npm run seed" first.\n');
+    });
+  })
+  .catch((e) => {
+    console.error('Failed to start (store init error):', e.message);
+    process.exit(1);
+  });
